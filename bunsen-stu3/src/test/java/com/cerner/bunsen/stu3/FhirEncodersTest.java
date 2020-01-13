@@ -18,6 +18,7 @@ import org.hl7.fhir.dstu3.model.Annotation;
 import org.hl7.fhir.dstu3.model.Coding;
 import org.hl7.fhir.dstu3.model.Condition;
 import org.hl7.fhir.dstu3.model.DateTimeType;
+import org.hl7.fhir.dstu3.model.Extension;
 import org.hl7.fhir.dstu3.model.IntegerType;
 import org.hl7.fhir.dstu3.model.Medication;
 import org.hl7.fhir.dstu3.model.MedicationRequest;
@@ -83,7 +84,7 @@ public class FhirEncodersTest {
     decodedObservation = observationsDataset.head();
 
     medDataset = spark.createDataset(ImmutableList.of(medRequest),
-        encoders.of(MedicationRequest.class, Medication.class, Provenance.class));
+        encoders.myOf(MedicationRequest.class, Medication.class, Provenance.class, Extension.class));
     decodedMedRequest = medDataset.head();
   }
 

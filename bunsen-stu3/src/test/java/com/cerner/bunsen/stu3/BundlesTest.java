@@ -13,6 +13,7 @@ import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Encoders;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.functions;
+import org.apache.spark.storage.StorageLevel;
 import org.hl7.fhir.dstu3.model.Bundle;
 import org.hl7.fhir.dstu3.model.Condition;
 import org.hl7.fhir.dstu3.model.MedicationRequest;
@@ -185,6 +186,8 @@ public class BundlesTest {
         bundlesRdd,
         "MedicationRequest",
         "Medication");
+    
+    medicationRequests.persist(StorageLevel.MEMORY_AND_DISK_SER());
 
     checkContained(medicationRequests);
   }

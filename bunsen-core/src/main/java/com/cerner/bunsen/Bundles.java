@@ -6,6 +6,7 @@ import ca.uhn.fhir.context.RuntimeResourceDefinition;
 import ca.uhn.fhir.parser.IParser;
 import java.io.IOException;
 import java.io.Serializable;
+import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
 import java.util.List;
 import org.apache.spark.api.java.JavaRDD;
@@ -50,15 +51,25 @@ public class Bundles {
           .newJsonParser()
           .encodeResourceToString(bundle);
 
-      stream.writeUTF(encodedBundle);
+      //stream.writeUTF(encodedBundle);
+
+      byte[] data = encodedBundle.getBytes(StandardCharsets.UTF_8);
+      stream.writeInt(data.length);
+      stream.write(data);
     }
 
     private void readObject(java.io.ObjectInputStream stream) throws IOException,
         ClassNotFoundException {
 
       stream.defaultReadObject();
+      
+      int length = stream.readInt();
+      byte[] data = new byte[length];
+      stream.readFully(data);
 
-      String encodedBundle = stream.readUTF();
+      String encodedBundle = new String(data, StandardCharsets.UTF_8);
+
+      //      String encodedBundle = stream.readUTF();
 
       bundle = (IBaseBundle) FhirEncoders.contextFor(fhirVersion)
           .newJsonParser()
