@@ -181,6 +181,8 @@ private[bunsen] class EncoderBuilder(fhirContext: FhirContext,
 
     ObjectType(cls)
   }
+  
+  private val bannedStuff = Set("valueExtension", "valueElementDefinition")
 
   /**
     * Returns a sequence of name, value expressions
@@ -215,20 +217,26 @@ private[bunsen] class EncoderBuilder(fhirContext: FhirContext,
       val namedExpressions = choice.getValidChildTypes.toList.flatMap(fhirChildType => {
 
         val childName = choice.getChildNameByDatatype(fhirChildType)
+        
+        if (bannedStuff.contains(childName)) {
+          None
+        } else {
 
-        val choiceChildDefinition = choice.getChildByName(childName)
+          val choiceChildDefinition = choice.getChildByName(childName)
 
-        val childObject = If(InstanceOf(choiceObject, choiceChildDefinition.getImplementingClass),
-          ObjectCast(choiceObject, ObjectType(choiceChildDefinition.getImplementingClass)),
-          Literal.create(null, ObjectType(choiceChildDefinition.getImplementingClass)))
+          val childObject = If(InstanceOf(choiceObject, choiceChildDefinition.getImplementingClass),
+            ObjectCast(choiceObject, ObjectType(choiceChildDefinition.getImplementingClass)),
+            Literal.create(null, ObjectType(choiceChildDefinition.getImplementingClass)))
 
-        val childExpr = choiceChildDefinition match {
+          val childExpr = choiceChildDefinition match {
 
-          case composite: BaseRuntimeElementCompositeDefinition[_] => compositeToExpr(childObject, composite)
-          case primitive: RuntimePrimitiveDatatypeDefinition => dataTypeMappings.primitiveEncoderExpression(childObject, primitive);
+            case composite: BaseRuntimeElementCompositeDefinition[_] => compositeToExpr(childObject, composite)
+            case primitive: RuntimePrimitiveDatatypeDefinition => dataTypeMappings.primitiveEncoderExpression(childObject, primitive)
+            case _: RuntimePrimitiveDatatypeXhtmlHl7OrgDefinition => dataTypeToUtf8Expr(childObject)
+          }
+
+          List(Literal(childName), childExpr)
         }
-
-        List(Literal(childName), childExpr)
       })
 
       namedExpressions
