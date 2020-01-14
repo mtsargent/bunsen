@@ -6,7 +6,7 @@ import org.apache.spark.sql.types.{BooleanType => _, DateType => _, IntegerType 
 import org.hl7.fhir.instance.model.api.IBaseResource
 
 import scala.collection.JavaConversions._
-import scala.collection.immutable.Stream.Empty
+import scala.collection.immutable.Stream.Empty 
 
 /**
   * Extracts a Spark schema based on a FHIR data model.
@@ -25,6 +25,8 @@ class SchemaConverter(fhirContext: FhirContext, dataTypeMappings: DataTypeMappin
 
     compositeToStructType(definition)
   }
+  
+  private val bannedAnyTypes = Set("valueExtension", "defaultValueUri", "valueElementDefinition")
 
   /**
     * Returns the fields used to represent the given child definition. In most cases this
@@ -45,7 +47,7 @@ class SchemaConverter(fhirContext: FhirContext, dataTypeMappings: DataTypeMappin
 
       // Iterate by types and then lookup the field names so we get the preferred
       // field name for the given type.
-      for (fhirChildType <- choice.getValidChildTypes.toList) yield {
+      for (fhirChildType <- choice.getValidChildTypes.toList; if !bannedAnyTypes.contains(choice.getChildNameByDatatype(fhirChildType))) yield {
 
         val childName = choice.getChildNameByDatatype(fhirChildType)
 
@@ -53,7 +55,8 @@ class SchemaConverter(fhirContext: FhirContext, dataTypeMappings: DataTypeMappin
 
           // case reference if (reference.getImplementingClass == classOf[Reference]) => SchemaConverter.referenceSchema
           case composite: RuntimeCompositeDatatypeDefinition => compositeToStructType(composite)
-          case primitive: RuntimePrimitiveDatatypeDefinition => dataTypeMappings.primitiveToDataType(primitive);
+          case primitive: RuntimePrimitiveDatatypeDefinition => dataTypeMappings.primitiveToDataType(primitive)
+          case _: RuntimePrimitiveDatatypeXhtmlHl7OrgDefinition => DataTypes.StringType
         }
 
         StructField(childName, childType)
