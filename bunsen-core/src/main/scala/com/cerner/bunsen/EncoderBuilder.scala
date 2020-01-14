@@ -182,7 +182,7 @@ private[bunsen] class EncoderBuilder(fhirContext: FhirContext,
     ObjectType(cls)
   }
   
-  private val bannedStuff = Set("valueExtension", "valueElementDefinition")
+  private val bannedStuff = Set[Any]("valueExtension", "valueElementDefinition")
 
   /**
     * Returns a sequence of name, value expressions
@@ -416,6 +416,7 @@ private[bunsen] class EncoderBuilder(fhirContext: FhirContext,
 
         case composite: BaseRuntimeElementCompositeDefinition[_] => compositeToDeserializer(composite, Some(childPath))
         case primitive: RuntimePrimitiveDatatypeDefinition => dataTypeMappings.primitiveDecoderExpression(primitive.getImplementingClass, Some(childPath))
+        case htmlHl7: RuntimePrimitiveDatatypeXhtmlHl7OrgDefinition => xhtmlHl7ToDeserializer(htmlHl7, Option(childPath))
       }
 
       val child = ObjectCast(deserializer, ObjectType(dataTypeMappings.baseType()))
@@ -447,7 +448,7 @@ private[bunsen] class EncoderBuilder(fhirContext: FhirContext,
       val choiceChildDefinition = childDefinition.asInstanceOf[RuntimeChildChoiceDefinition]
 
       Map(childDefinition.getElementName ->
-        choiceToDeserializer(choiceChildDefinition.getValidChildTypes.toList,
+        choiceToDeserializer(choiceChildDefinition.getValidChildTypes.toList.filterNot(b => bannedStuff.contains(choiceChildDefinition.getChildNameByDatatype(b))),
           choiceChildDefinition,
           path))
 

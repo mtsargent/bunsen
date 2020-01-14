@@ -325,7 +325,7 @@ public class FhirEncoders {
     }
     
 
-    Map<String, BaseRuntimeElementDefinition<?>> elementMap = elementDefinitions.stream().filter(b -> b instanceof BaseRuntimeElementCompositeDefinition).collect(Collectors.toMap(BaseRuntimeElementDefinition::getName, identity()));
+    Map<String, BaseRuntimeElementDefinition> elementMap = elementDefinitions.stream().filter(b -> b instanceof BaseRuntimeElementCompositeDefinition).collect(Collectors.toMap(BaseRuntimeElementDefinition::getName, identity()));
 
 //    BaseRuntimeElementCompositeDefinition definition =
 //            context.getResourceDefinition(type);
@@ -364,14 +364,18 @@ public class FhirEncoders {
 //
 //      return encoder;
 
-    ExpressionEncoder<T> encoder = (ExpressionEncoder<T>)
-            EncoderBuilder.of((BaseRuntimeElementCompositeDefinition<?>) elementMap.get("Extension"),
-                              context,
-                              mappings,
-                              new SchemaConverter(context, mappings),
-                              JavaConversions.asScalaBuffer(new ArrayList<>()));
-      
-    return null;
+    BaseRuntimeElementCompositeDefinition<?> definition = (BaseRuntimeElementCompositeDefinition<?>) elementMap.get("Extension");
+
+    ExpressionEncoder<T> encoder;
+    encoder = (ExpressionEncoder<T>) EncoderBuilder.of(
+            definition,
+            context,
+            mappings,
+            new SchemaConverter(context, mappings),
+            JavaConversions.asScalaBuffer(new ArrayList<>())
+    );
+
+    return encoder;
   }
 
   /**

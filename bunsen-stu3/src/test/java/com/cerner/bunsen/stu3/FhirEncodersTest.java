@@ -13,6 +13,7 @@ import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
+import org.apache.spark.sql.catalyst.encoders.ExpressionEncoder;
 import org.apache.spark.sql.functions;
 import org.hl7.fhir.dstu3.model.Annotation;
 import org.hl7.fhir.dstu3.model.Coding;
@@ -84,7 +85,7 @@ public class FhirEncodersTest {
     decodedObservation = observationsDataset.head();
 
     medDataset = spark.createDataset(ImmutableList.of(medRequest),
-        encoders.myOf(MedicationRequest.class, Medication.class, Provenance.class, Extension.class));
+        encoders.of(MedicationRequest.class, Medication.class, Provenance.class));
     decodedMedRequest = medDataset.head();
   }
 
@@ -237,6 +238,8 @@ public class FhirEncodersTest {
 
   @Test
   public void contained() throws FHIRException {
+
+    ExpressionEncoder<Extension> extensionExpressionEncoder = encoders.myOf(Extension.class);
 
     // Contained resources should be put to the Contained list in order of the Encoder arguments
     Assert.assertTrue(decodedMedRequest.getContained().get(0) instanceof Medication);
