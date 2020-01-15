@@ -70,7 +70,7 @@ case class InstanceOf(value: Expression,
     val code =
       code"""
          ${obj.code}
-         final boolean ${ev.value} = ${obj.value} instanceof ${checkedType.getName};
+         final boolean ${ev.value} = ${obj.value} != null && ${obj.value}.getClass() == ${checkedType.getName}.class;
        """
 
     ev.copy(code = code, isNull = FalseLiteral)

@@ -1,7 +1,5 @@
 package com.cerner.bunsen.stu3;
 
-import com.cerner.bunsen.FhirEncoders;
-import com.google.common.collect.ImmutableList;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.nio.file.Files;
@@ -9,9 +7,11 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.sql.Dataset;
+import org.apache.spark.sql.Encoders;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.encoders.ExpressionEncoder;
@@ -43,9 +43,10 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import com.cerner.bunsen.FhirEncoders;
+import com.google.common.collect.ImmutableList;
+
 import scala.collection.JavaConversions;
-import scala.collection.Seq;
-import scala.collection.JavaConversions.*;
 
 /**
  * Test for FHIR encoders.
@@ -247,9 +248,17 @@ public class FhirEncodersTest {
   
   @Test
   public void notAnActualTest() {
+    Extension nestedExtension = new Extension();
+    nestedExtension.setUrl("http://www.notrealeither.comorgnet");
+    nestedExtension.setId("nested");
+    
+    List<Extension> nestedExtensions = new ArrayList<>();
+    nestedExtensions.add(nestedExtension);
+    
     Age value1 = new Age();
     value1.setCode("years");
     value1.setValue(10);
+    value1.setExtension(nestedExtensions);
     
     Extension extension1 = new Extension();
     extension1.setUrl("http://www.notreal.comorgnet");
@@ -262,9 +271,16 @@ public class FhirEncodersTest {
     extension2.setId("extension-id-002");
     extension2.setValue(new StringType("string-val"));
     
+    Extension extension3 = new Extension();
+    extension3.setUrl("http://www.notrealeither.comorgnet");
+    extension3.setId("extension-id-003");
+    
+    
+    
     List<Extension> extensions = new ArrayList<>();
     extensions.add(extension1);
     extensions.add(extension2);
+    extensions.add(extension3);
 
     ExpressionEncoder<Extension> extensionExpressionEncoder = encoders.myOf(Extension.class);
 
