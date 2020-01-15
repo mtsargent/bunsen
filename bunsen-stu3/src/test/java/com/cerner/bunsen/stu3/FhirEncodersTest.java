@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import org.apache.spark.api.java.JavaRDD;
@@ -15,6 +16,9 @@ import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.encoders.ExpressionEncoder;
 import org.apache.spark.sql.functions;
+import org.apache.spark.sql.types.StructField;
+import org.apache.spark.sql.types.StructType;
+import org.hl7.fhir.dstu3.model.Age;
 import org.hl7.fhir.dstu3.model.Annotation;
 import org.hl7.fhir.dstu3.model.Coding;
 import org.hl7.fhir.dstu3.model.Condition;
@@ -30,6 +34,7 @@ import org.hl7.fhir.dstu3.model.Provenance;
 import org.hl7.fhir.dstu3.model.Provenance.ProvenanceEntityComponent;
 import org.hl7.fhir.dstu3.model.Quantity;
 import org.hl7.fhir.dstu3.model.Resource;
+import org.hl7.fhir.dstu3.model.StringType;
 import org.hl7.fhir.exceptions.FHIRException;
 import org.hl7.fhir.instance.model.api.IBaseReference;
 import org.hl7.fhir.instance.model.api.IBaseResource;
@@ -37,6 +42,10 @@ import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import scala.collection.JavaConversions;
+import scala.collection.Seq;
+import scala.collection.JavaConversions.*;
 
 /**
  * Test for FHIR encoders.
@@ -235,11 +244,41 @@ public class FhirEncodersTest {
         decoded.getAuthorReference().getReference());
 
   }
+  
+  @Test
+  public void notAnActualTest() {
+    Age value1 = new Age();
+    value1.setCode("years");
+    value1.setValue(10);
+    
+    Extension extension1 = new Extension();
+    extension1.setUrl("http://www.notreal.comorgnet");
+    extension1.setId("extension-id-001");
+    extension1.setValue(value1);
+    
+    
+    Extension extension2 = new Extension();
+    extension2.setUrl("http://anotherfakething.netorgcom");
+    extension2.setId("extension-id-002");
+    extension2.setValue(new StringType("string-val"));
+    
+    List<Extension> extensions = new ArrayList<>();
+    extensions.add(extension1);
+    extensions.add(extension2);
+
+    ExpressionEncoder<Extension> extensionExpressionEncoder = encoders.myOf(Extension.class);
+
+    StructType schema = extensionExpressionEncoder.schema();
+    List<StructField> structFields = JavaConversions.seqAsJavaList(schema);
+
+
+    Dataset<Extension> extensionDataset = spark.createDataset(extensions, extensionExpressionEncoder);
+    
+    int x = 0;
+  }
 
   @Test
   public void contained() throws FHIRException {
-
-    ExpressionEncoder<Extension> extensionExpressionEncoder = encoders.myOf(Extension.class);
 
     // Contained resources should be put to the Contained list in order of the Encoder arguments
     Assert.assertTrue(decodedMedRequest.getContained().get(0) instanceof Medication);

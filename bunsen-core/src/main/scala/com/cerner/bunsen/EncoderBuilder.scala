@@ -43,7 +43,7 @@ private[bunsen] object EncoderBuilder {
 
     val fhirClass = definition.getImplementingClass
 
-    val schema = converter.parentToStructType(definition, contained)
+    val schema = StructType(converter.parentToStructType(definition, contained).distinct)
 
     val inputObject = BoundReference(0, ObjectType(fhirClass), nullable = true)
 
@@ -338,6 +338,7 @@ private[bunsen] class EncoderBuilder(fhirContext: FhirContext,
     (childFields ++ containedChildren).grouped(2)
       .map(group => group.get(1))
       .toList
+      .distinct
   }
 
   private def listToDeserializer(definition: BaseRuntimeElementDefinition[_ <: IBase],
