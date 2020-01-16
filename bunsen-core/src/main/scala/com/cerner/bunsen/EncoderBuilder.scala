@@ -182,7 +182,7 @@ private[bunsen] class EncoderBuilder(fhirContext: FhirContext,
     ObjectType(cls)
   }
   
-  private val bannedStuff = Set[Any]("valueExtension", "valueElementDefinition")
+  private val bannedStuff = Set[Any]("valueExtension", "valueElementDefinition", "valueXhtml")
 
   /**
     * Returns a sequence of name, value expressions

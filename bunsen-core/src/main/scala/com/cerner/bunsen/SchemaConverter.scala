@@ -26,7 +26,7 @@ class SchemaConverter(fhirContext: FhirContext, dataTypeMappings: DataTypeMappin
     compositeToStructType(definition)
   }
   
-  private val bannedAnyTypes = Set("valueExtension", "valueElementDefinition")
+  private val bannedAnyTypes = Set("valueExtension", "valueElementDefinition", "valueXhtml")
 
   /**
     * Returns the fields used to represent the given child definition. In most cases this

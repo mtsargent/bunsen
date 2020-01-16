@@ -5,6 +5,7 @@ import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -46,6 +47,7 @@ import org.junit.Test;
 import com.cerner.bunsen.FhirEncoders;
 import com.google.common.collect.ImmutableList;
 
+import ca.uhn.fhir.context.FhirContext;
 import scala.collection.JavaConversions;
 
 /**
@@ -259,6 +261,7 @@ public class FhirEncodersTest {
     value1.setCode("years");
     value1.setValue(10);
     value1.setExtension(nestedExtensions);
+    value1.setComparator(Quantity.QuantityComparator.GREATER_THAN);
     
     Extension extension1 = new Extension();
     extension1.setUrl("http://www.notreal.comorgnet");
@@ -289,7 +292,13 @@ public class FhirEncodersTest {
 
 
     Dataset<Extension> extensionDataset = spark.createDataset(extensions, extensionExpressionEncoder);
-    
+
+    Iterator<Extension> extensionIterator = extensionDataset.toLocalIterator();
+    while (extensionIterator.hasNext()) {
+      Extension extension = extensionIterator.next();
+      int y = 1000;
+    }
+
     int x = 0;
   }
 
