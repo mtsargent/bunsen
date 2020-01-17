@@ -43,7 +43,7 @@ private[bunsen] object EncoderBuilder {
 
     val fhirClass = definition.getImplementingClass
 
-    val schema = converter.parentToStructType(definition, contained)
+    val schema = StructType(converter.parentToStructType(definition, contained).distinct)
 
     val inputObject = BoundReference(0, ObjectType(fhirClass), nullable = true)
 
@@ -181,6 +181,8 @@ private[bunsen] class EncoderBuilder(fhirContext: FhirContext,
 
     ObjectType(cls)
   }
+  
+  private val bannedStuff = Set[Any]("valueExtension", "valueElementDefinition", "valueXhtml")
 
   /**
     * Returns a sequence of name, value expressions
@@ -215,20 +217,26 @@ private[bunsen] class EncoderBuilder(fhirContext: FhirContext,
       val namedExpressions = choice.getValidChildTypes.toList.flatMap(fhirChildType => {
 
         val childName = choice.getChildNameByDatatype(fhirChildType)
+        
+        if (bannedStuff.contains(childName)) {
+          None
+        } else {
 
-        val choiceChildDefinition = choice.getChildByName(childName)
+          val choiceChildDefinition = choice.getChildByName(childName)
 
-        val childObject = If(InstanceOf(choiceObject, choiceChildDefinition.getImplementingClass),
-          ObjectCast(choiceObject, ObjectType(choiceChildDefinition.getImplementingClass)),
-          Literal.create(null, ObjectType(choiceChildDefinition.getImplementingClass)))
+          val childObject = If(InstanceOf(choiceObject, choiceChildDefinition.getImplementingClass),
+            ObjectCast(choiceObject, ObjectType(choiceChildDefinition.getImplementingClass)),
+            Literal.create(null, ObjectType(choiceChildDefinition.getImplementingClass)))
 
-        val childExpr = choiceChildDefinition match {
+          val childExpr = choiceChildDefinition match {
 
-          case composite: BaseRuntimeElementCompositeDefinition[_] => compositeToExpr(childObject, composite)
-          case primitive: RuntimePrimitiveDatatypeDefinition => dataTypeMappings.primitiveEncoderExpression(childObject, primitive);
+            case composite: BaseRuntimeElementCompositeDefinition[_] => compositeToExpr(childObject, composite)
+            case primitive: RuntimePrimitiveDatatypeDefinition => dataTypeMappings.primitiveEncoderExpression(childObject, primitive)
+            case _: RuntimePrimitiveDatatypeXhtmlHl7OrgDefinition => dataTypeToUtf8Expr(childObject)
+          }
+
+          List(Literal(childName), childExpr)
         }
-
-        List(Literal(childName), childExpr)
       })
 
       namedExpressions
@@ -330,6 +338,7 @@ private[bunsen] class EncoderBuilder(fhirContext: FhirContext,
     (childFields ++ containedChildren).grouped(2)
       .map(group => group.get(1))
       .toList
+      .distinct
   }
 
   private def listToDeserializer(definition: BaseRuntimeElementDefinition[_ <: IBase],
@@ -408,6 +417,7 @@ private[bunsen] class EncoderBuilder(fhirContext: FhirContext,
 
         case composite: BaseRuntimeElementCompositeDefinition[_] => compositeToDeserializer(composite, Some(childPath))
         case primitive: RuntimePrimitiveDatatypeDefinition => dataTypeMappings.primitiveDecoderExpression(primitive.getImplementingClass, Some(childPath))
+        case htmlHl7: RuntimePrimitiveDatatypeXhtmlHl7OrgDefinition => xhtmlHl7ToDeserializer(htmlHl7, Option(childPath))
       }
 
       val child = ObjectCast(deserializer, ObjectType(dataTypeMappings.baseType()))
@@ -439,7 +449,7 @@ private[bunsen] class EncoderBuilder(fhirContext: FhirContext,
       val choiceChildDefinition = childDefinition.asInstanceOf[RuntimeChildChoiceDefinition]
 
       Map(childDefinition.getElementName ->
-        choiceToDeserializer(choiceChildDefinition.getValidChildTypes.toList,
+        choiceToDeserializer(choiceChildDefinition.getValidChildTypes.toList.filterNot(b => bannedStuff.contains(choiceChildDefinition.getChildNameByDatatype(b))),
           choiceChildDefinition,
           path))
 

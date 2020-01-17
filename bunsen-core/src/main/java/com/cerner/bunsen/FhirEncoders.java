@@ -2,18 +2,26 @@ package com.cerner.bunsen;
 
 import static ca.uhn.fhir.context.FhirVersionEnum.DSTU3;
 import static ca.uhn.fhir.context.FhirVersionEnum.R4;
+import static java.util.function.Function.identity;
 
 import ca.uhn.fhir.context.BaseRuntimeElementCompositeDefinition;
+import ca.uhn.fhir.context.BaseRuntimeElementDefinition;
 import ca.uhn.fhir.context.FhirContext;
 import ca.uhn.fhir.context.FhirVersionEnum;
 import ca.uhn.fhir.context.RuntimeResourceDefinition;
 import com.cerner.bunsen.datatypes.DataTypeMappings;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
+
 import org.apache.spark.sql.catalyst.encoders.ExpressionEncoder;
+import org.hl7.fhir.instance.model.api.IBase;
 import org.hl7.fhir.instance.model.api.IBaseResource;
 import scala.collection.JavaConversions;
 
@@ -298,6 +306,76 @@ public class FhirEncoders {
 
       return encoder;
     }
+  }
+
+  public final <T extends IBase> ExpressionEncoder<T> myOf(Class<T> type, Class... contained) {
+
+    Collection<BaseRuntimeElementDefinition<?>> elementDefinitions = context.getElementDefinitions();
+
+    Set<String> elements = new HashSet<>();
+    for (BaseRuntimeElementDefinition elementDefinition: elementDefinitions) {
+      String name = elementDefinition.getName();
+      System.out.println(name);
+      if (elements.contains(name)) {
+        System.out.println(name + " is duplicate");
+      }
+      else {
+        elements.add(name);
+      }
+    }
+    
+
+    Map<String, BaseRuntimeElementDefinition> elementMap = elementDefinitions.stream().filter(b -> b instanceof BaseRuntimeElementCompositeDefinition).collect(Collectors.toMap(BaseRuntimeElementDefinition::getName, identity()));
+
+//    BaseRuntimeElementCompositeDefinition definition =
+//            context.getResourceDefinition(type);
+//
+//    List<BaseRuntimeElementCompositeDefinition<?>> containedDefinitions = new ArrayList<>();
+//
+//    for (Class<? extends IBase> resource : contained) {
+//
+//      containedDefinitions.add(context.getResourceDefinition(resource));
+//    }
+//
+//    StringBuilder keyBuilder = new StringBuilder(type.getName());
+//
+//    for (Class resource : contained) {
+//
+//      keyBuilder.append(resource.getName());
+//    }
+//
+//    int key = keyBuilder.toString().hashCode();
+//
+//    synchronized (encoderCache) {
+//
+//      ExpressionEncoder<T> encoder = encoderCache.get(key);
+//
+//      if (encoder == null) {
+//
+//        encoder = (ExpressionEncoder<T>)
+//                EncoderBuilder.of(definition,
+//                                  context,
+//                                  mappings,
+//                                  new SchemaConverter(context, mappings),
+//                                  JavaConversions.asScalaBuffer(containedDefinitions));
+//
+//        encoderCache.put(key, encoder);
+//      }
+//
+//      return encoder;
+
+    BaseRuntimeElementCompositeDefinition<?> definition = (BaseRuntimeElementCompositeDefinition<?>) elementMap.get("Extension");
+
+    ExpressionEncoder<T> encoder;
+    encoder = (ExpressionEncoder<T>) EncoderBuilder.of(
+            definition,
+            context,
+            mappings,
+            new SchemaConverter(context, mappings),
+            JavaConversions.asScalaBuffer(new ArrayList<>())
+    );
+
+    return encoder;
   }
 
   /**
